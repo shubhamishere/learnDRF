@@ -7,13 +7,14 @@ from rest_framework.renderers import JSONRenderer
 from django.http import HttpResponse, JsonResponse
 import requests
 from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.views import View
 
-# Create your views here.
-#need to exempt csrf token requirement for now 
-@csrf_exempt
-def student_api(request):
-    #handling incoming client requests for GETting the data 
-    if request.method == 'GET':
+
+#using class bases views for CRUD operations
+@method_decorator(csrf_exempt, name='dispatch')
+class StudentAPI(View):
+    def get(self, request, *args, **kwargs):
         #catch the client side request data
         incoming_json_data = request.body
         stream = io.BytesIO(incoming_json_data)
@@ -34,8 +35,8 @@ def student_api(request):
         outgoing_json_data = JSONRenderer().render(serializer.data)
         return HttpResponse(outgoing_json_data, content_type='application/json')
 
-    #handling incoming client requests for POSTing/writing/creating new data on server side
-    if request.method == 'POST':
+    def post(self, request, *args, **kwargs):
+        #handling incoming client requests for POSTing/writing/creating new data on server side
         #catching the client side request data
         #client side JSON format data then--> python data type then--> complex data type then--> save in DB
         incoming_json_data = request.body
@@ -48,13 +49,12 @@ def student_api(request):
             res ={'msg': 'data created'}
             outgoing_json_data = JSONRenderer().render(res)
             return HttpResponse(outgoing_json_data, content_type='application/json')
-        
+
         #case when data was invalid, not serialised successfuly
         outgoing_json_data = JSONRenderer().render(serializer.errors)
         return HttpResponse(outgoing_json_data, content_type='application/json')
-        
-    #handling incoming client requests for PUTting/editing/modifying existing data on server side
-    if request.method == 'PUT':
+    
+    def put(self, request, *args, **kwargs):
         incoming_json_data = request.body
         incoming_stream = io.BytesIO(incoming_json_data)
         #pythondata: dictionary->key value pairs
@@ -74,8 +74,7 @@ def student_api(request):
         json_data = JSONRenderer.render(serializer.errors)
         return HttpResponse(json_data, content_type='application/json')
 
-    #handling incoming client request to delete student data
-    if request.method == 'DELETE':
+    def delete(self, request, *args, **kwargs):
         incoming_json_data = request.body
         stream = io.BytesIO(incoming_json_data)
         pythondata = JSONParser().parse(stream)
